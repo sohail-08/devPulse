@@ -115,7 +115,9 @@ export const getSingleIssueService = async (id: number) => {
 ========================= */
 export const updateIssueService = async (
   id: number,
-  payload: IUpdateIssue,
+  payload: IUpdateIssue & {
+    status?: "open" | "in_progress" | "resolved";
+  },
   user: { id: number; role: string }
 ) => {
   const issueRes = await pool.query(
@@ -129,7 +131,9 @@ export const updateIssueService = async (
 
   const issue = issueRes.rows[0];
 
-  // contributor restriction
+  // =========================
+  // CONTRIBUTOR RESTRICTION
+  // =========================
   if (user.role === "contributor") {
     if (issue.reporter_id !== user.id) {
       throw new Error("Not allowed to update this issue");
@@ -138,23 +142,36 @@ export const updateIssueService = async (
     if (issue.status !== "open") {
       throw new Error("Cannot update non-open issues");
     }
+
+    if (payload.status) {
+      throw new Error("Contributors cannot change status");
+    }
   }
 
+  // =========================
+  // UPDATE QUERY
+  // =========================
   const updated = await pool.query(
     `UPDATE issues
      SET 
        title = COALESCE($1, title),
        description = COALESCE($2, description),
        type = COALESCE($3, type),
+       status = COALESCE($4, status),
        updated_at = NOW()
-     WHERE id = $4
+     WHERE id = $5
      RETURNING *`,
-    [payload.title, payload.description, payload.type, id]
+    [
+      payload.title,
+      payload.description,
+      payload.type,
+      user.role === "maintainer" ? payload.status : issue.status,
+      id,
+    ]
   );
 
   return updated.rows[0];
 };
-
 /* =========================
    DELETE ISSUE
 ========================= */

@@ -48,6 +48,7 @@ export const getSingleIssue = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
+      message: "Issue retrieved successfully",
       data: result,
     });
   } catch (error: any) {
@@ -93,6 +94,7 @@ export const deleteIssue = async (req: Request, res: Response) => {
     res.status(404).json({
       success: false,
       message: error.message,
+      error: error,
     });
   }
 };
