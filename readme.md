@@ -6,7 +6,7 @@ An internal **tech issue & feature tracking system** built for software teams to
 
 ##  Live URL
 
-https://dev-pulse-sohailshaikh4612-8838-sohailshaikh4612-8838s-projects.vercel.app/
+https://dev-pulse-blush-psi.vercel.app/
 
 ---
 
