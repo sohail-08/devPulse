@@ -1,7 +1,9 @@
 import { pool } from "../../database";
 import type { ICreateIssue, IUpdateIssue } from "./issues.interface";
 
-// CREATE ISSUE
+/* =========================
+   CREATE ISSUE
+========================= */
 export const createIssueService = async (
   payload: ICreateIssue,
   userId: number
@@ -18,10 +20,14 @@ export const createIssueService = async (
   return result.rows[0];
 };
 
-// GET ALL ISSUES (NO JOIN)
-export const getAllIssuesService = async (
-  query: { sort?: string; type?: string; status?: string }
-) => {
+/* =========================
+   GET ALL ISSUES
+========================= */
+export const getAllIssuesService = async (query: {
+  sort?: string;
+  type?: string;
+  status?: string;
+}) => {
   let baseQuery = "SELECT * FROM issues WHERE 1=1";
   const values: any[] = [];
   let count = 1;
@@ -38,32 +44,43 @@ export const getAllIssuesService = async (
     count++;
   }
 
-  if (query.sort === "oldest") {
-    baseQuery += " ORDER BY created_at ASC";
-  } else {
-    baseQuery += " ORDER BY created_at DESC";
-  }
+  baseQuery +=
+    query.sort === "oldest"
+      ? " ORDER BY created_at ASC"
+      : " ORDER BY created_at DESC";
 
   const issuesResult = await pool.query(baseQuery, values);
   const issues = issuesResult.rows;
 
-  /* NO JOIN RULE → fetch reporters separately */
+  // fetch reporters separately (NO JOIN RULE)
   const reporterIds = [...new Set(issues.map((i) => i.reporter_id))];
 
-  const usersResult = await pool.query(
-    `SELECT id, name, role FROM users WHERE id = ANY($1)`,
-    [reporterIds]
-  );
+  let usersMap = new Map();
 
-  const usersMap = new Map(usersResult.rows.map((u) => [u.id, u]));
+  if (reporterIds.length > 0) {
+    const usersResult = await pool.query(
+      `SELECT id, name, role FROM users WHERE id = ANY($1)`,
+      [reporterIds]
+    );
+
+    usersMap = new Map(usersResult.rows.map((u) => [u.id, u]));
+  }
 
   return issues.map((issue) => ({
-    ...issue,
+    id: issue.id,
+    title: issue.title,
+    description: issue.description,
+    type: issue.type,
+    status: issue.status,
     reporter: usersMap.get(issue.reporter_id) || null,
+    created_at: issue.created_at,
+    updated_at: issue.updated_at,
   }));
 };
 
-// GET SINGLE ISSUE
+/* =========================
+   GET SINGLE ISSUE
+========================= */
 export const getSingleIssueService = async (id: number) => {
   const issueResult = await pool.query(
     "SELECT * FROM issues WHERE id = $1",
@@ -82,12 +99,20 @@ export const getSingleIssueService = async (id: number) => {
   );
 
   return {
-    ...issue,
+    id: issue.id,
+    title: issue.title,
+    description: issue.description,
+    type: issue.type,
+    status: issue.status,
     reporter: userResult.rows[0] || null,
+    created_at: issue.created_at,
+    updated_at: issue.updated_at,
   };
 };
 
-// UPDATE ISSUE 
+/* =========================
+   UPDATE ISSUE
+========================= */
 export const updateIssueService = async (
   id: number,
   payload: IUpdateIssue,
@@ -104,7 +129,7 @@ export const updateIssueService = async (
 
   const issue = issueRes.rows[0];
 
-  /* Contributor restriction */
+  // contributor restriction
   if (user.role === "contributor") {
     if (issue.reporter_id !== user.id) {
       throw new Error("Not allowed to update this issue");
@@ -130,8 +155,9 @@ export const updateIssueService = async (
   return updated.rows[0];
 };
 
-
-//    DELETE ISSUE (MAINTAINER ONLY)
+/* =========================
+   DELETE ISSUE
+========================= */
 export const deleteIssueService = async (id: number) => {
   const result = await pool.query(
     "DELETE FROM issues WHERE id = $1 RETURNING *",
