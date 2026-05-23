@@ -6,7 +6,7 @@ An internal **tech issue & feature tracking system** built for software teams to
 
 ##  Live URL
 
-https://your-live-url.com
+https://dev-pulse-sohailshaikh4612-8838-sohailshaikh4612-8838s-projects.vercel.app/
 
 ---
 
@@ -43,7 +43,7 @@ https://your-live-url.com
 
 ### 1 Clone Repository
 ```bash
-git clone https://github.com/your-username/devpulse-server.git
+git clone https://github.com/sohail-08/devPulse.git
 cd devpulse-server
 ```
 
